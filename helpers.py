@@ -169,13 +169,42 @@ def plot_signal(signal_df, title="Signal vs Price"):
     ax.fill_between(signal_df.index, signal_df['Close'].min(), signal_df['Close'].max(),
                      where=in_long, color='green', alpha=0.15, label='Long')
 
-    # Overlay MAs if present (MA crossover signal)
+    # Overlay MAs if given (MA crossover signal)
     if 'Short' in signal_df.columns:
         ax.plot(signal_df.index, signal_df['Short'], label='MA Short', color='blue', linewidth=1)
         ax.plot(signal_df.index, signal_df['Long'], label='MA Long', color='orange', linewidth=1)
 
     ax.set_title(title)
     ax.set_ylabel("Price ($)")
+    ax.legend()
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_strategy_comparison(strategy_cumulative_dict, buyhold_cumulative, title="Strategy vs Buy & Hold"):
+    """
+    Plots one or more strategy cumulative return series against buy-and-hold.
+
+    Parameters:
+    strategy_cumulative_dict (dict): {label: cumulative_return_series}, e.g.
+                                      {'MA Crossover': ma_cumulative, 'Mean Reversion': mr_cumulative}
+    buyhold_cumulative (Series): buy-and-hold cumulative return series.
+    title (str): plot title.
+
+    Returns:
+    No returns, shows the plot.
+    """
+    fig, ax = plt.subplots(figsize=(14, 6))
+
+    for label, series in strategy_cumulative_dict.items():
+        ax.plot(series.index, series, label=label, linewidth=1.5)
+
+    ax.plot(buyhold_cumulative.index, buyhold_cumulative, label='Buy & Hold',
+            color='black', linewidth=1.5, linestyle='--')
+
+    ax.set_title(title)
+    ax.set_ylabel("Cumulative Return (start = 1.0)")
+    ax.set_xlabel("Date")
     ax.legend()
     plt.tight_layout()
     plt.show()
