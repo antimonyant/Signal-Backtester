@@ -1,5 +1,6 @@
 import yfinance as yf
 import matplotlib.pyplot as plt
+import pandas as pd
 
 def get_data(tickers, start_date, end_date):
     """
@@ -84,5 +85,97 @@ def visualizations(data, tickers):
     for ax, ticker in zip(axes.flatten(), tickers):
         returns[ticker].hist(bins=100, ax=ax, range=(-0.2, 0.3))
         ax.set_title(ticker)
+    plt.tight_layout()
+    plt.show()
+
+
+def get_moving_average_signal(data, ticker, short_window, long_window):
+    """
+    Computes short-term and long-term moving averages for a given ticker.
+
+    Parameters:
+    data (DataFrame): A pandas DataFrame containing historical stock data.
+    ticker (str): The ticker symbol for which to compute moving averages.
+    short_window (int): The window size for the short-term moving average.
+    long_window (int): The window size for the long-term moving average.
+
+    Returns:
+    DataFrame with MA_short, MA_long, and signal (1 = long, 0 = flat) columns.
+    """
+    close = data['Close'][ticker]
+    ma_short = close.rolling(short_window).mean()
+    ma_long = close.rolling(long_window).mean()
+    signal = (ma_short > ma_long).astype(int)
+
+    return pd.DataFrame({
+        'Close': close,
+        'Short': ma_short,
+        'Long': ma_long,
+        'Signal': signal})
+
+
+def get_mean_reversion_signal(data, ticker, window, entry_threshold, exit_threshold):
+    """
+    Computes a mean reversion signal for a given ticker.
+
+    Parameters:
+    data (DataFrame): A pandas DataFrame containing historical stock data.
+    ticker (str): The ticker symbol for which to compute the mean reversion signal.
+    window (int): The window size for the moving average.
+    entry_threshold (float): The z-score threshold for entering a position.
+    exit_threshold (float): The z-score threshold for exiting a position.
+
+    Returns:
+    DataFrame with Close, Z-score, and Signal columns.
+    """
+    close = data['Close'][ticker]
+    rolling_mean = close.rolling(window).mean()
+    rolling_std = close.rolling(window).std()
+    z_score = (close - rolling_mean) / rolling_std
+
+    signal = pd.Series(0, index=close.index)
+    in_position = False
+    for i in range(len(z_score)):
+        if not in_position and z_score.iloc[i] < entry_threshold:
+            in_position = True
+        elif in_position and z_score.iloc[i] > exit_threshold:
+            in_position = False
+        signal.iloc[i] = 1 if in_position else 0
+
+    return pd.DataFrame({
+        'Close': close,
+        'Z-Score': z_score,
+        'Signal': signal})
+
+
+def plot_signal(signal_df, title="Signal vs Price"):
+    """
+    Plots price with the long/flat signal shaded, for visual sanity-checking.
+
+    Parameters:
+    signal_df (DataFrame): must contain 'Close' and 'Signal' columns
+                            (the output of get_ma_crossover_signal or get_mean_reversion_signal).
+    title (str): plot title.
+
+    Returns:
+    No returns, shows the plot.
+    """
+    fig, ax = plt.subplots(figsize=(14, 6))
+
+    ax.plot(signal_df.index, signal_df['Close'], label='Close Price', color='black', linewidth=1)
+
+    # Shade the periods where signal == 1 (long)
+    in_long = signal_df['Signal'] == 1
+    ax.fill_between(signal_df.index, signal_df['Close'].min(), signal_df['Close'].max(),
+                     where=in_long, color='green', alpha=0.15, label='Long')
+
+    # Overlay MAs if present (MA crossover signal)
+    if 'Short' in signal_df.columns:
+        ax.plot(signal_df.index, signal_df['Short'], label='MA Short', color='blue', linewidth=1)
+        ax.plot(signal_df.index, signal_df['Long'], label='MA Long', color='orange', linewidth=1)
+
+    ax.set_title(title)
+    ax.set_ylabel("Price ($)")
+    ax.legend()
     plt.tight_layout()
     plt.show()
