@@ -279,3 +279,79 @@ def evaluate_strategy(strategy_returns):
         'Sharpe Ratio': sharpe,
         'Max Drawdown': max_dd
     }
+
+
+def run_backtest(data, ticker, signal_type, signal_params, plot=True):
+    """
+    Runs a full backtest pipeline for a single ticker and signal type.
+
+    Parameters:
+    data (DataFrame): historical stock data from get_data.
+    ticker (str): ticker symbol to backtest.
+    signal_type (str): 'ma' for moving average crossover, 'mr' for mean reversion.
+    signal_params (dict): parameters for the chosen signal.
+                           'ma' expects {'short': int, 'long': int}
+                           'mr' expects {'window': int, 'entry': float, 'exit': float}
+    plot (bool): whether to show signal and comparison plots.
+
+    Returns:
+    dict: performance metrics for the strategy vs buy-and-hold.
+    """
+    stock_returns = get_returns(data)[ticker]
+
+    if signal_type == 'ma':
+        signal_df = get_moving_average_signal(
+            data, ticker, signal_params['short'], signal_params['long']
+        )
+    elif signal_type == 'mr':
+        signal_df = get_mean_reversion_signal(
+            data, ticker, signal_params['window'], signal_params['entry'], signal_params['exit']
+        )
+    else:
+        raise ValueError(f"Unknown signal_type: {signal_type}")
+
+    strategy_returns = backtest_signal(signal_df['Signal'], stock_returns)
+    strategy_cumulative = get_cumulative_returns(strategy_returns)
+    buyhold_cumulative = get_cumulative_returns(stock_returns)
+
+    metrics = {
+        'ticker': ticker,
+        'strategy': signal_type,
+        'strategy_sharpe': sharpe_ratio(strategy_returns),
+        'buyhold_sharpe': sharpe_ratio(stock_returns),
+        'strategy_max_dd': max_drawdown(strategy_cumulative),
+        'buyhold_max_dd': max_drawdown(buyhold_cumulative),
+        'strategy_total_return': strategy_cumulative.iloc[-1] - 1,
+        'buyhold_total_return': buyhold_cumulative.iloc[-1] - 1
+    }
+
+    if plot:
+        plot_signal(signal_df, title=f"{ticker} - {signal_type.upper()} Signal")
+        plot_strategy_comparison(
+            {signal_type.upper(): strategy_cumulative},
+            buyhold_cumulative,
+            title=f"{ticker}: Strategy vs Buy & Hold"
+        )
+
+    return metrics
+
+
+def run_all(data, tickers, signal_type, signal_params, plot=False):
+    """
+    Runs run_backtest across a list of tickers and returns a results table.
+
+    Parameters:
+    data (DataFrame): historical stock data from get_data.
+    tickers (list): list of ticker symbols.
+    signal_type (str): 'ma' or 'mr'.
+    signal_params (dict): parameters for the chosen signal (see run_backtest).
+    plot (bool): whether to show plots for each ticker (off by default — noisy in bulk mode).
+
+    Returns:
+    DataFrame: one row per ticker with performance metrics.
+    """
+    results = []
+    for ticker in tickers:
+        result = run_backtest(data, ticker, signal_type, signal_params, plot=plot)
+        results.append(result)
+    return pd.DataFrame(results)

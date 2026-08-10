@@ -1,49 +1,40 @@
+import argparse
 import helpers
 
-# Inspect Data
-tickers = "AAPL MSFT GOOG NVDA SPY VOO"
-start_date = "2015-01-01"
-end_date = "2026-01-01"
-allow_plots = True
 
-data = helpers.get_data(tickers, start_date, end_date)
-print(data.head())
-print(data.columns)
-print(data['Close']['2020-01-01':'2020-12-31']['GOOG'])
+def main():
+    parser = argparse.ArgumentParser(description="Simple trading signal backtester")
+    parser.add_argument('--tickers', default='AAPL MSFT GOOG SPY VOO',
+                         help="Space-separated tickers, e.g. 'AAPL MSFT'")
+    parser.add_argument('--start-date', default='2015-01-01')
+    parser.add_argument('--end-date', default='2026-01-01')
+    parser.add_argument('--mode', choices=['single', 'all'], default='single')
+    parser.add_argument('--ticker', default='AAPL', help="Used only when --mode single")
+    parser.add_argument('--strategy', choices=['ma', 'mr'], default='ma')
+    parser.add_argument('--ma-short', type=int, default=20)
+    parser.add_argument('--ma-long', type=int, default=100)
+    parser.add_argument('--mr-window', type=int, default=20)
+    parser.add_argument('--mr-entry', type=float, default=-1.0)
+    parser.add_argument('--mr-exit', type=float, default=0.0)
+    parser.add_argument('--plot', action='store_true', help="Show plots")
 
-# Compute daily returns on each ticker
-returns = helpers.get_returns(data)
-print(returns.head())
-print(returns.describe())
+    args = parser.parse_args()
 
-# Compute Moving Average Signal
-ma_signal = helpers.get_moving_average_signal(data, "AAPL", 20, 100)
-#plot_signal = helpers.plot_signal(ma_signal, title="AAPL - MA Crossover Signal")
+    data = helpers.get_data(args.tickers, args.start_date, args.end_date)
 
-# Compute Mean Reversion Signal
-mr_signal = helpers.get_mean_reversion_signal(data, "AAPL", 20, -1.0, 0.0)
-#plot_signal = helpers.plot_signal(mr_signal, title="AAPL - Mean Reversion Signal")
+    if args.strategy == 'ma':
+        signal_params = {'short': args.ma_short, 'long': args.ma_long}
+    else:
+        signal_params = {'window': args.mr_window, 'entry': args.mr_entry, 'exit': args.mr_exit}
 
-# Backtest the signals
-ma_strategy_returns = helpers.backtest_signal(ma_signal['Signal'], returns['AAPL'])
-mr_strategy_returns = helpers.backtest_signal(mr_signal['Signal'], returns['AAPL'])
+    if args.mode == 'single':
+        result = helpers.run_backtest(data, args.ticker, args.strategy, signal_params, plot=args.plot)
+        for k, v in result.items():
+            print(f"{k}: {v}")
+    else:
+        results_table = helpers.run_all(data, args.tickers.split(), args.strategy, signal_params, plot=args.plot)
+        print(results_table.to_string(index=False))
 
-ma_cumulative_returns = helpers.get_cumulative_returns(ma_strategy_returns)
-mr_cumulative_returns = helpers.get_cumulative_returns(mr_strategy_returns)
-buyhold_cumulative_returns = helpers.get_cumulative_returns(returns['AAPL'])
 
-helpers.plot_strategy_comparison({'Moving Average': ma_cumulative_returns, 'Mean Reversion': mr_cumulative_returns}, 
-                                 buyhold_cumulative_returns, title="AAPL: Strategy Comparison")
-
-# Run metrics to rank strategies
-print("Moving Average Strategy:")
-print(f"Sharpe Ratio: {helpers.sharpe_ratio(ma_strategy_returns)}")
-print(f"Max Drawdown: {helpers.max_drawdown(ma_cumulative_returns)}")
-
-print("\nMean Reversion Strategy:")
-print(f"Sharpe Ratio: {helpers.sharpe_ratio(mr_strategy_returns)}")
-print(f"Max Drawdown: {helpers.max_drawdown(mr_cumulative_returns)}")
-
-print("\nBuy & Hold Strategy:")
-print(f"Sharpe Ratio: {helpers.sharpe_ratio(returns['AAPL'])}")
-print(f"Max Drawdown: {helpers.max_drawdown(buyhold_cumulative_returns)}")
+if __name__ == '__main__':
+    main()
