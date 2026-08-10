@@ -1,3 +1,33 @@
 ## List of things/terms I learned ##
 _____________________________________
-1. 
+1. Daily returns: (price_today - price_yesterday) / price_yesterday
+To normalize the gains
+
+2. Distribution of returns often have fat tails or extreme days that push the price up and down
+
+3. Moving Average Crossover: Get the average of a short and long window. Buy once the short reachers over the long window
+Relies on the strategy that recent trends will continue but will not work on choppy markets
+
+4. Mean Reversion: Get the z-score to see how many stds the current price is from the mean.
+Choose a threshold to enter and exit. Relies on the strategy that prices that deviate too far will snap back.
+
+5. 10x move means your investment is now worth 10x its original amount (corresponds to a 900% increase)
+
+6. Want to compute compound returns. For example, if you made 10% on Monday and 10% on Tuesday, 
+you did not make 20% total. Instead you made 21%, because Tuesday's 10% applies to a balance that already grew on Monday
+(1 + return1) × (1 + return2) × (1 + return3) × ... × (1 + returnN) = (1 + returns).cumprod()
+
+7. Lookahead bias: If you run your strategy knowing the close price of today, then you are looking in the future to trade which is impossible.
+This is why you have to shift the signal forward a day
+
+8. Sharpe ratio: How much return am I getting per unit of risk?
+Sharpe = (average daily return / std of daily returns) × sqrt(252)
+When you add up independent random variables (the daily returns), the variances add but the stds do not.
+You must square root them which is why we have a sqrt(252) term.
+
+9. Std is a measure of risk because a return series that bounces up and down a large amount is unpredictable.
+However, a large increase is not really a risk which is a limitation of the Sharpe ratio.
+
+10. Max Drawdown: What's the worst peak-to-trough loss I would have survived?
+Keep track of the highest cumulative return up to today and compute how far below that today's value is
+

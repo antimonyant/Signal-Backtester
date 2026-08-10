@@ -208,3 +208,74 @@ def plot_strategy_comparison(strategy_cumulative_dict, buyhold_cumulative, title
     ax.legend()
     plt.tight_layout()
     plt.show()
+
+
+def backtest_signal(signal, returns):
+    '''
+    Backtests a trading signal against the returns of a stock.
+
+    Parameters:
+    signal (Series): A pandas Series containing the trading signal (1 = long, 0 = flat).
+    returns (Series): A pandas Series containing the daily returns of the stock.
+
+    Returns:
+    Series: A pandas Series containing the strategy returns.
+    '''
+    signal_shifted = signal.shift(1).fillna(0)
+    strategy_returns = signal_shifted * returns
+
+    return strategy_returns
+
+def sharpe_ratio(strategy_returns):
+    """
+    Computes the Sharpe ratio for a given strategy returns series.
+
+    Parameters:
+    strategy_returns (Series): A pandas Series containing the strategy returns.
+
+    Returns:
+    float: The Sharpe ratio of the strategy.
+    """
+    mean_return = strategy_returns.mean()
+    std_return = strategy_returns.std()
+
+    # Puts ratio into an annual perspective
+    sharpe_ratio = mean_return / std_return * (252 ** 0.5)
+    return sharpe_ratio
+
+
+def max_drawdown(cumulative_returns):
+    """
+    Computes the maximum drawdown for a given cumulative returns series.
+
+    Parameters:
+    cumulative_returns (Series): A pandas Series containing the cumulative returns.
+
+    Returns:
+    float: The maximum drawdown of the strategy.
+    """
+    rolling_max = cumulative_returns.cummax()
+    drawdown = (cumulative_returns - rolling_max) / rolling_max
+    # Most negative is worst drawdown
+    max_drawdown = drawdown.min()
+    return max_drawdown
+
+
+def evaluate_strategy(strategy_returns):
+    """
+    Evaluates a trading strategy by computing its Sharpe ratio and maximum drawdown.
+
+    Parameters:
+    strategy_returns (Series): A pandas Series containing the strategy returns.
+
+    Returns:
+    dict: A dictionary containing the Sharpe ratio and maximum drawdown.
+    """
+    cumulative_returns = get_cumulative_returns(strategy_returns)
+    sharpe = sharpe_ratio(strategy_returns)
+    max_dd = max_drawdown(cumulative_returns)
+
+    return {
+        'Sharpe Ratio': sharpe,
+        'Max Drawdown': max_dd
+    }
