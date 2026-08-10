@@ -55,43 +55,12 @@ Signal overlay Chart
 | VOO      | mr         |         0.417919  |         0.800417 |         -0.316041 |        -0.33993  |                0.697601 |                3.02736 |
 | NVDA     | mr         |         0.601889  |         1.35715  |         -0.48403  |        -0.663351 |                3.40155  |              385.119   |
 
-### Transaction cost impact
-
-<!-- Optional chart 3: cumulative return with vs. without transaction costs -->
-
-<!-- Small before/after table, e.g.
-
-| Strategy       | Sharpe (gross) | Sharpe (net of costs) | Total Return (gross) | Total Return (net) |
-|----------------|-----------------|------------------------|------------------------|----------------------|
-| MA Crossover   | ...             | ...                    | ...                     | ...                  |
-| Mean Reversion | ...             | ...                    | ...                     | ...                  |
--->
-
 ## Limitations
 
-This section is the most important part of this README — being able to name a backtest's weaknesses honestly is more valuable than the backtest looking good.
+1. Transaction costs: Currently this backtester assumes every trade is free and executes instantly at the exact closing price. However, I have learned that real trades has costs, such as exchange fees. This changes the sharpe ratio slightly and also negatively affects some strategies more than others. For a more realistic comparison, these transaction costs would need to be implemented.
 
-<!-- Write 4-6 honest sentences. Suggested structure, one point each:
+2. Overfitting: I used standard parameter choices for the moving average windows (20/100) as well as the entry/exit thresholds for mean reversion(-1.0/0.0) rather than searching for parameters that maximized performance. I have played around with other numbers that do better but would attribute that gain to overfitting to noise since I had no separate data to confirm it generalizes.
 
-1. Transaction costs: state the specific Sharpe/return drop you measured after adding a flat 5bps
-   cost per trade, and note that mean reversion degraded more than MA crossover because it trades
-   more frequently.
+3. Regime dependency: These results are conditional on the specific period and assets tested. For example, AAPL's long uptrend likely favored the moving average strategy over the mean reversion strategy, but a choppier period or asset would likely reverse that ranking.
 
-2. Overfitting: state that you used standard/textbook parameter choices (20/100 MA windows, -1.0/0.0
-   z-score thresholds) rather than searching for parameters that maximized backtested performance,
-   specifically to avoid fitting to noise in this historical period.
-
-3. Regime dependency: state that results are conditional on the specific period/assets tested —
-   e.g. AAPL's decade-long uptrend likely favored momentum over mean reversion, and a choppier
-   period or asset would likely reverse that ranking.
-
-4. Data source: note yfinance is a free, non-point-in-time data source, not something you'd rely
-   on for production backtesting.
-
-5. What you'd do next: walk-forward / out-of-sample testing, more assets, realistic slippage
-   modeling that scales with trade size, and position sizing instead of always being 100% in or out.
--->
-
-## What I'd improve with more time
-
-<!-- Optional short list, can overlap with limitations #5 above -->
+4. What I'd work on next: To reinforce my overfitting assumption, I would perform some form of walk-forward testing. By splitting the data into a training and test period, I can confirm if the strategies' results are a pattern or if they follow some other model.
