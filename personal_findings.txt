@@ -31,4 +31,5 @@ However, a large increase is not really a risk which is a limitation of the Shar
 10. Max Drawdown: What's the worst peak-to-trough loss I would have survived?
 Keep track of the highest cumulative return up to today and compute how far below that today's value is
 
-11. 
+11. The biggest flaw of this backtest is that I never validated my results with data outside the sample data I pulled.
+Therefore I don't actually know if my results will generalize or not.
